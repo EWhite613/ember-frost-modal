@@ -1,3 +1,3 @@
-import 'npm:focus-trap'
+import 'npm:tabbable'
 
 export {default} from 'ember-frost-modal/components/frost-modal-dialog'

@@ -1,8 +1,30 @@
 import Ember from 'ember'
-const {Component, on, run, Logger} = Ember
+const {$, Component, on, run} = Ember
 import layout from '../templates/components/frost-modal-dialog'
-import createFocusTrap from 'npm:focus-trap'
+import tabbable from 'npm:tabbable'
 
+let container
+let lastElement
+function checkFocus (e) {
+  if (container.contains(e.target)) {
+    lastElement = document.activeElement
+    return
+  } else {
+    let focusableElements = tabbable(container)
+    let lastIndex = $(focusableElements).index(lastElement)
+
+    if (lastIndex > -1) {
+      let next = focusableElements[lastIndex + 1] || focusableElements[0]
+      next.focus()
+      return
+    }
+    e.preventDefault()
+    e.stopImmediatePropagation()
+  }
+
+  // Checking for a blur method here resolves a Firefox issue (#15)
+  if (typeof e.target.blur === 'function') e.target.blur()
+}
 export default Component.extend({
 
   // == Component properties ==================================================
@@ -24,26 +46,16 @@ export default Component.extend({
   }),
   // END-SNIPPET
   didInsertElement () {
-
-    let element = this.get('element')
-    let candidateSelectors = 'input,select,a[href],textarea,button,[tabindex]'
-    // .has returns a Jquery object, hence need to check length
-    if (this.$(element).find(candidateSelectors).has(':visible').length) {
-      let focusTrap = createFocusTrap(element)
-      try {
-        focusTrap.activate()
-        this.set('focusTrap', focusTrap)
-      } catch (e) {
-        // catch just incase our check isn't good enough
-        Logger.error(e)
-      }
-    }
+    container = this.get('element')
+    document.addEventListener('focus', checkFocus, true)
   },
   willDestroyElement () {
-    let focusTrap = this.get('focusTrap')
-    if (focusTrap && focusTrap.deactivate) {
-      focusTrap.deactivate()
-    }
+    // let focusTrap = this.get('focusTrap')
+    // if (focusTrap && focusTrap.deactivate) {
+    //   focusTrap.deactivate()
+    // }
+
+    document.removeEventListener('focus', checkFocus, true)
   },
   // == Actions ===============================================================
 
